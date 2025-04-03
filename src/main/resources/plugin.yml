@@ -1,0 +1,11 @@
+name: MorliAntiBot
+version: '${version}'
+main: morlianno.morliantibot.MorliAntiBot
+prefix: MorliAntiBot
+load: STARTUP
+authors: [MorliannoStudio]
+description: Плагин, который запрещает вход ботам, по типу BareAPI и т.д.
+commands:
+  mab:
+    description: "MAB command"
+    permission: "morlianno.antibot.mab"
