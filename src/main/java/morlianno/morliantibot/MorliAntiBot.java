@@ -14,7 +14,7 @@ public final class MorliAntiBot extends JavaPlugin {
     @Override
     public void onEnable() {
         LOGGER.info("Плагин включён!");
-        LOGGER.info("Сделано студией MorliannoStudio");
+        LOGGER.info("Плагин написан студией MorliannoStudio");
         LOGGER.info("Telegram: @MorliannoStudio");
         LOGGER.info("Версия: " + version);
 
@@ -24,7 +24,8 @@ public final class MorliAntiBot extends JavaPlugin {
         LOGGER.info("------------------------------");
         LOGGER.info("ПЛАГИН В БЕТА СТАДИИ! ВОЗМОЖНЫ БАГИ!");
         LOGGER.info("ПРОВЕРЯЙТЕ ПЛАГИН НА ОБНОВЛЕНИЯ В БОТЕ/MODRINTH/GITHUB RELEASES!");
-        LOGGER.info("СООБЩАЙТЕ О БАГАХ НАМ В БОТА/GITHUB ISSUES!");
+        LOGGER.info("СООБЩАЙТЕ О БАГАХ НАМ НА GITHUB ISSUES!");
+        LOGGER.info("https://github.com/MorliannoStudio/MorliAntiBot/issues");
         LOGGER.info("------------------------------");
         LOGGER.info("");
         LOGGER.info("");
