@@ -1,74 +1,93 @@
 package morlianno.morliantibot.commands;
 
-import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
+import morlianno.morliantibot.MorliAntiBot;
+import morlianno.morliantibot.bot.DetectBot;
+import morlianno.morliantibot.managers.PermissionManager;
+import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-import morlianno.morliantibot.bot.DetectBot;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
+import java.util.*;
 
 public class MABCommand implements CommandExecutor, TabCompleter {
-    private final JavaPlugin plugin;
+    private final MorliAntiBot plugin;
     private final DetectBot detectBot;
+    private final PermissionManager permissionManager;
 
-    public MABCommand(JavaPlugin plugin, DetectBot detectBot) {
+    public MABCommand(MorliAntiBot plugin, DetectBot detectBot, PermissionManager permissionManager) {
         this.plugin = plugin;
         this.detectBot = detectBot;
+        this.permissionManager = permissionManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            plugin.reloadConfig();
-            detectBot.reloadConfig(plugin.getConfig());
-            sender.sendMessage("[MorliAntiBot] §aКонфиг перезагружен.");
+        if (args.length == 1) {
+            String sub = args[0].toLowerCase();
 
-            FileConfiguration config = plugin.getConfig();
+            switch (sub) {
+                case "reload":
+                    plugin.reloadConfig();
+                    plugin.loadMessages();
+                    detectBot.reloadConfig(plugin.getConfig());
+                    FileConfiguration config = plugin.getConfig();
 
-            if (!config.contains("punishment") || config.getString("punishment").isEmpty()) {
-                sender.sendMessage("[MorliAntiBot] §cОшибка: В config.yml не указан параметр punishment! Боты не будут наказаны!");
+                    sender.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("config-reloaded"));
+
+                    if (!config.contains("punishment") || Objects.requireNonNull(config.getString("punishment")).isEmpty()) {
+                        sender.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("no-punishment"));
+                    }
+
+                    if (config.getInt("punishment-duration", -1) == -1
+                            && !config.getString("punishment", "").equalsIgnoreCase("ban")
+                            && !config.getString("punishment", "").equalsIgnoreCase("banip")
+                            && !config.getString("punishment", "").equalsIgnoreCase("deny")) {
+                        sender.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("no-punishment-duration"));
+                    }
+
+                    if (!config.contains("punishment-reason") || config.getString("punishment-reason").isEmpty()) {
+                        sender.sendMessage(plugin.getMessage("no-punishment-reason"));
+                    }
+
+                    return true;
+
+                case "alerts":
+                    if (!(sender instanceof Player)) {
+                        sender.sendMessage(plugin.getMessage("usedbyconsole"));
+                        return true;
+                    }
+
+                    Player player = (Player) sender;
+
+                    if (permissionManager == null) {
+                        player.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("luckperms-not-found"));
+                        return true;
+                    }
+
+                    String permission = "morlianno.antibot.alert";
+                    Set<UUID> alertsEnabled = plugin.getAlertsEnabled();
+
+                    if (!alertsEnabled.contains(player.getUniqueId())) {
+                        alertsEnabled.add(player.getUniqueId());
+                        permissionManager.addPermission(player.getUniqueId(), permission);
+                        player.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("alerts-enabled"));
+                    } else {
+                        alertsEnabled.remove(player.getUniqueId());
+                        permissionManager.removePermission(player.getUniqueId(), permission);
+                        player.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("alerts-disabled"));
+                    }
+                    return true;
+
+                case "antiraid":
+                    sender.sendMessage(plugin.getMessage("prefix"));
+                    return true;
             }
-
-            int punishmentDuration = config.getInt("punishment-duration", -1);
-            if (punishmentDuration == -1 && !config.getString("punishment").equalsIgnoreCase("ban") && !config.getString("punishment").equalsIgnoreCase("banip") && !config.getString("punishment").equalsIgnoreCase("deny")) {
-                sender.sendMessage("[MorliAntiBot] §cОшибка: В config.yml не указан параметр punishment-duration! Боты не будут наказаны!");
-            }
-
-            if (!config.contains("punishment-reason") || config.getString("punishment-reason").isEmpty()) {
-                sender.sendMessage("[MorliAntiBot] §cОшибка: В config.yml не указан параметр punishment-reason! Боты не будут наказаны!");
-            }
-            return true;
-        } else if (args.length == 1 && args[0].equalsIgnoreCase("alerts")) {
-            if (!(sender instanceof Player)) {
-                sender.sendMessage("[MorliAntiBot] §cЭту команду может использовать только игрок.");
-                return true;
-            }
-
-            Player player = (Player) sender;
-            String permission = "morlianno.antibot.alert";
-            String commandToRun;
-
-            if (player.hasPermission(permission)) {
-                commandToRun = "lp user " + player.getName() + " permission set " + permission + " false";
-                player.sendMessage("[MorliAntiBot] §cОповещения отключены.");
-            } else {
-                commandToRun = "lp user " + player.getName() + " permission set " + permission + " true";
-                player.sendMessage("[MorliAntiBot] §aОповещения включены.");
-            }
-
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), commandToRun);
-            return true;
-        } else {
-            sender.sendMessage("[MorliAntiBot] §cИспользование: /mab reload | alerts");
-            return false;
         }
+
+        sender.sendMessage(plugin.getMessage("prefix") + plugin.getMessage("usage"));
+        sender.sendMessage("/mab reload - " + plugin.getMessage("reload-usage"));
+        sender.sendMessage("/mab alerts - " + plugin.getMessage("alerts-usage"));
+        return false;
     }
 
     @Override

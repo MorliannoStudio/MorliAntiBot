@@ -9,3 +9,4 @@ commands:
   mab:
     description: "MAB command"
     permission: "morlianno.antibot.mab"
+depend: [LuckPerms]

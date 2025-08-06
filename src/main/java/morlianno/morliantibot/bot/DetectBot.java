@@ -1,12 +1,12 @@
 package morlianno.morliantibot.bot;
 
 import morlianno.morliantibot.managers.AlertManager;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import static morlianno.morliantibot.MorliAntiBot.LOGGER;
 
@@ -25,51 +25,60 @@ public class DetectBot implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        String playerName = event.getPlayer().getName().toLowerCase();
+        Player player = event.getPlayer();
+        String playerName = player.getName().toLowerCase();
         List<String> disallowedContains = config.getStringList("disallowed-contains");
 
         for (String disallowed : disallowedContains) {
             if (playerName.contains(disallowed.toLowerCase())) {
-                String punishment = config.getString("punishment");
-                Integer punishmentDuration = config.contains("punishment-duration") ? config.getInt("punishment-duration") : null;
-                String punishmentReason = config.contains("punishment-reason") ? config.getString("punishment-reason") : null;
+                String punishment = config.getString("punishment", "");
+                int punishmentDuration = config.getInt("punishment-duration", -1);
+                String punishmentReason = config.getString("punishment-reason", "");
 
-                if (punishmentDuration == null) {
-                    LOGGER.severe("§cОшибка: В config.yml не указан параметр punishment-duration! Боты не будут наказаны!");
-                }
-
-                if (punishmentReason == null) {
-                    LOGGER.severe("§cОшибка: В config.yml не указан параметр punishment-reason! Боты не будут наказаны!");
-                }
-
-                if (punishmentDuration == null || punishmentReason == null) {
+                if (punishmentDuration == -1 || punishmentReason.isEmpty()) {
+                    if (punishmentDuration == -1) {
+                        LOGGER.severe("§cОшибка: В config.yml не указан параметр punishment-duration! Боты не будут наказаны!");
+                    }
+                    if (punishmentReason.isEmpty()) {
+                        LOGGER.severe("§cОшибка: В config.yml не указан параметр punishment-reason! Боты не будут наказаны!");
+                    }
                     return;
                 }
 
-                if ("tempban".equalsIgnoreCase(punishment)) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tempban " + playerName + " " + punishmentDuration + "m " + punishmentReason);
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " попытался войти на сервер, но был забанен на " + punishmentDuration + " минут");
-                    AlertManager.tempbanned(event.getPlayer().getName(), punishmentDuration);
-                } else if ("tempbanip".equalsIgnoreCase(punishment)) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tempbanip " + playerName + " " + punishmentDuration + "m " + punishmentReason);
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " попытался войти на сервер, но был забанен по IP на " + punishmentDuration + " минут");
-                    AlertManager.tempbannedip(event.getPlayer().getName(), punishmentDuration);
-                } else if ("ban".equalsIgnoreCase(punishment)) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban " + playerName + " " + punishmentReason);
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " попытался войти на сервер, но был забанен навсегда");
-                    AlertManager.banned(event.getPlayer().getName());
-                } else if ("banip".equalsIgnoreCase(punishment)) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "banip " + playerName + " " + punishmentReason);
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " попытался войти на сервер, но был забанен по IP навсегда");
-                    AlertManager.bannedip(event.getPlayer().getName());
-                } else if ("deny".equalsIgnoreCase(punishment)) {
-                    Player player = event.getPlayer();
-                    player.kickPlayer(punishmentReason);
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " попытался войти на сервер, но был кикнут");
-                    AlertManager.kicked(event.getPlayer().getName());
-                } else {
-                    LOGGER.info("§eБот " + event.getPlayer().getName() + " зашёл на сервер, но наказания не было, так как в config.yml указан неверный тип наказания.");
-                    AlertManager.noAction(event.getPlayer().getName());
+                switch (punishment.toLowerCase()) {
+                    case "tempban":
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tempban " + playerName + " " + punishmentDuration + "m " + punishmentReason);
+                        LOGGER.info("§eБот " + player.getName() + " забанен временно на " + punishmentDuration + " минут");
+                        AlertManager.tempbanned(player.getName(), punishmentDuration);
+                        break;
+
+                    case "tempbanip":
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tempbanip " + playerName + " " + punishmentDuration + "m " + punishmentReason);
+                        LOGGER.info("§eБот " + player.getName() + " забанен по IP временно на " + punishmentDuration + " минут");
+                        AlertManager.tempbannedip(player.getName(), punishmentDuration);
+                        break;
+
+                    case "ban":
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban " + playerName + " " + punishmentReason);
+                        LOGGER.info("§eБот " + player.getName() + " забанен навсегда");
+                        AlertManager.banned(player.getName());
+                        break;
+
+                    case "banip":
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "banip " + playerName + " " + punishmentReason);
+                        LOGGER.info("§eБот " + player.getName() + " забанен по IP навсегда");
+                        AlertManager.bannedip(player.getName());
+                        break;
+
+                    case "deny":
+                        player.kickPlayer(punishmentReason);
+                        LOGGER.info("§eБот " + player.getName() + " кикнут");
+                        AlertManager.kicked(player.getName());
+                        break;
+
+                    default:
+                        LOGGER.info("§eБот " + player.getName() + " зашёл на сервер, наказание не применено — неверный тип punishment.");
+                        AlertManager.noAction(player.getName());
                 }
                 break;
             }

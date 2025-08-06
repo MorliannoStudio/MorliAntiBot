@@ -8,11 +8,16 @@
 # Плагин был создан в MorliannoStudio
 # Telegram: @MorliannoStudio
 
+# Настройки плагина
+language: "RU" # Возможные: RU, EN
+
 # Наказание
 # Возможные наказания: tempban, tempbanip, ban, banip, deny
 punishment: "banip"
 punishment-duration: 60 # Время наказания в минутах (60 по умолчанию) (не применяется на ban, banip и deny)
 punishment-reason: "Бот" # Причина наказания
 
+# Антирейд
+# Возможные наказания: tempban, tempbanip, ban, banip, deny
 disallowed-contains: # Содержимое ников, например если ник из этого списка содержит "BareAPI_", то будет применено наказание
   - "BareAPI_"
